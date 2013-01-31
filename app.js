@@ -33,6 +33,11 @@ red.del('online');
 
 var app = express();
 
+// app.use(function(req, res, next){
+//   var ua = req.headers['user-agent'];
+//   red.sadd('agents', 'USER');
+// });
+
 app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
@@ -50,10 +55,6 @@ app.configure(function(){
 
 app.configure('development', function(){
   app.use(express.errorHandler());
-	// app.use(function(req, res, next){
-	//   var ua = req.headers['user-agent'];
-	//   red.sadd('agents', ua);
-	// });
 });
 
 // GET /
