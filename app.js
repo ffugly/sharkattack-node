@@ -1,4 +1,6 @@
 var MESSAGE_CHANNEL = '/messages';
+var USERS_ONLINE    = '/users_online';
+var USERS_OFFLINE 	= '/users_offline';
 
 var express = require('express')
   , routes = require('./routes')
@@ -9,6 +11,7 @@ var express = require('express')
   , faye = require('faye')
   , mysql = require('mysql')
   , fayeRedis = require('faye-redis')
+	, redis = require('redis')
   , path = require('path');
 
 var connection = mysql.createConnection({
@@ -23,6 +26,7 @@ connection.query('SELECT 1 + 1 AS solution', function(err, rows, fields) {
   if (err) throw err;
 });
 
+var red = redis.createClient();
 var app = express();
 
 app.configure(function(){
@@ -47,11 +51,19 @@ app.configure('development', function(){
 // GET /
 app.get('/', routes.index);
 
-// GET /zeus.json
-app.get('/zeus.json', function(req, res) {
+// GET /chats.json
+app.get('/chats.json', function(req, res) {
   connection.query('SELECT * FROM messages ORDER BY id ASC', function(err, rows) {
     res.writeHead(200, {'Content-Type': 'application/json'});
     res.end(JSON.stringify(rows));
+  });
+});
+
+// GET /users.json
+app.get('/users.json', function(req, res) {
+	var users = red.smembers("online", function(err, content){
+		res.writeHead(200, {'Content-Type': 'application/json'});
+	  res.end(JSON.stringify(content));
   });
 });
 
@@ -81,9 +93,12 @@ bayeux.getClient().subscribe(MESSAGE_CHANNEL, function(message) {
   });
 });
 
+
 // When a user connects to the channel
 bayeux.bind('handshake', function(client_id) {
   console.log('[handshake] - client: ' + client_id + '');
+	bayeux.getClient().publish(USERS_ONLINE, client_id);
+	red.sadd('online', client_id);
 });
 
 bayeux.bind('subscribe', function(client_id, channel) {
@@ -98,10 +113,13 @@ bayeux.bind('publish', function(message, channels) {
 // When a user leaves the channel
 bayeux.bind('unsubscribe', function(client_id, channel) {
   console.log('[unsubscribe] - client: ' + client_id + ' channel: ' + channel + '');
+	red.srem('online', client_id);
 });
 
 bayeux.bind('disconnect', function(client_id) {
   console.log('[disconnect] - client: ' + client_id + '');
+	bayeux.getClient().publish(USERS_OFFLINE, client_id);
+	red.srem('online', client_id);
 });
 
 

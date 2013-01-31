@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
   <head>
     <title><%= title %></title>
@@ -23,19 +23,38 @@
           return false;
         });
         
+        // Watch for chat messages
         client.subscribe('/messages', function(message) {
           $('#chat').append('<li><span class="created_at">' + message.timestamp + '</span>' + message.content + '</li>');
         });
+        
+        // Watch for users coming online
+        client.subscribe('/users_online', function(id) {
+          $('#online').append('<li id="' + id + '">'+id+'</li>');
+        });
+        
+        // Watch for users coming offline
+        client.subscribe('/users_offline', function(id) {
+          $('ul#online li#'+id+'').remove()
+        });
 
-        $.getJSON('/zeus.json', function(data) {
+        $.getJSON('/chats.json', function(data) {
           var items = [];
-
           $.each(data, function(key, val) {
             items.push('<li><span class="created_at">' + val['timestamp'] + '</span> ' + val['content'] + '</li>');
           });
-
-          $.each(items,function(k, v) {
-            $('#chat').append(v);
+          $.each(items,function(key, value) {
+            $('#chat').append(value);
+          });
+        });
+        
+        $.getJSON('/users.json', function(data) {
+          var items = [];
+          $.each(data, function(k, v) {
+            items.push('<li id="'+v+'">'+v+'</li>');
+          });
+          $.each(items,function(key, value) {
+            $('#online').append(value);
           });
         });
         
@@ -43,14 +62,16 @@
     </script>
   </head>
   <body>
-    <ul id="online"></ul>
-    <h1>Shark Attack</h1>
-
-    <ul id="chat"></ul>
-    <br />
-    <form id="new_message" action="#" method="get" accept-charset="utf-8">
-      <input type="text" name="message" id="message" value="" />
-      <input type="submit" name="send" id="send" value="Send" />
-    </form>
+    
+    <div id="container">
+      <h1>Shark Attack</h1>
+      <ul id="online"></ul>
+      <ul id="chat"></ul>
+      <br />
+      <form id="new_message" action="#" method="get" accept-charset="utf-8">
+        <input type="text" name="message" id="message" value="" />
+        <input type="submit" name="send" id="send" value="Send" />
+      </form>
+    </div>
   </body>
 </html>
