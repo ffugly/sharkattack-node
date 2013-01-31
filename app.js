@@ -1,3 +1,5 @@
+var MESSAGE_CHANNEL = '/messages';
+
 var express = require('express')
   , routes = require('./routes')
   , user = require('./routes/user')
@@ -15,6 +17,7 @@ var connection = mysql.createConnection({
   password : '',
   database : 'sharkattack'
 });
+
 connection.connect();
 connection.query('SELECT 1 + 1 AS solution', function(err, rows, fields) {
   if (err) throw err;
@@ -41,15 +44,24 @@ app.configure('development', function(){
   app.use(express.errorHandler());
 });
 
+// GET /
 app.get('/', routes.index);
-app.get('/users', user.list);
+
+// GET /zeus.json
+app.get('/zeus.json', function(req, res) {
+  connection.query('SELECT * FROM messages ORDER BY id ASC', function(err, rows) {
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify(rows));
+  });
+});
 
 server = http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
 
+// Used for the chat messaging channel
 var bayeux = new faye.NodeAdapter({
-  mount: '/messages',
+  mount: MESSAGE_CHANNEL,
   timeout: 60,
   engine: {
     type: fayeRedis,
@@ -60,7 +72,7 @@ var bayeux = new faye.NodeAdapter({
 bayeux.attach(server);
 
 // Callbacks for bayeux
-bayeux.getClient().subscribe('/messages', function(message) {
+bayeux.getClient().subscribe(MESSAGE_CHANNEL, function(message) {
   var hash = JSON.stringify(message);
   console.log('[subscribe] - ' + hash);
   
@@ -69,6 +81,7 @@ bayeux.getClient().subscribe('/messages', function(message) {
   });
 });
 
+// When a user connects to the channel
 bayeux.bind('handshake', function(client_id) {
   console.log('[handshake] - client: ' + client_id + '');
 });
@@ -77,10 +90,12 @@ bayeux.bind('subscribe', function(client_id, channel) {
   console.log('[subscribe] - client: ' + client_id + ' channel: ' + channel + '');
 });
 
+// When a user publishes a message to the channel
 bayeux.bind('publish', function(message, channels) {
   console.log('[publish] - message: ' +message+ ' channels: ' + channels + '')
 });
 
+// When a user leaves the channel
 bayeux.bind('unsubscribe', function(client_id, channel) {
   console.log('[unsubscribe] - client: ' + client_id + ' channel: ' + channel + '');
 });

@@ -3,9 +3,54 @@
   <head>
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script type='text/javascript' src='/javascripts/faye.js'></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+
+    <script type='text/javascript'>
+      var client = new Faye.Client('http://localhost:3000/messages');
+
+      $(document).ready(function() {
+        $('#new_message').bind('submit', function() {
+          var now = new Date();
+          var msg = {
+            content: $('#message').val(),
+            user_id: 1,
+            timestamp: now.getHours() + ":" + now.getMinutes()
+          };
+          
+          client.publish('/messages', msg);
+          $('#message').val('');
+          return false;
+        });
+        
+        client.subscribe('/messages', function(message) {
+          $('#chat').append('<li><span class="created_at">' + message.timestamp + '</span>' + message.content + '</li>');
+        });
+
+        $.getJSON('/zeus.json', function(data) {
+          var items = [];
+
+          $.each(data, function(key, val) {
+            items.push('<li><span class="created_at">' + val['timestamp'] + '</span> ' + val['content'] + '</li>');
+          });
+
+          $.each(items,function(k, v) {
+            $('#chat').append(v);
+          });
+        });
+        
+      });
+    </script>
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+    <ul id="online"></ul>
+    <h1>Shark Attack</h1>
+
+    <ul id="chat"></ul>
+    <br />
+    <form id="new_message" action="#" method="get" accept-charset="utf-8">
+      <input type="text" name="message" id="message" value="" />
+      <input type="submit" name="send" id="send" value="Send" />
+    </form>
   </body>
 </html>
