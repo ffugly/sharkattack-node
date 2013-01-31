@@ -14,7 +14,7 @@
           var now = new Date();
           var msg = {
             content: $('#message').val(),
-            user_id: 1,
+            user_id: client._clientId,
             timestamp: now.getHours() + ":" + now.getMinutes()
           };
           

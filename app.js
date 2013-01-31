@@ -29,6 +29,9 @@ connection.query('SELECT 1 + 1 AS solution', function(err, rows, fields) {
 var red = redis.createClient();
 var app = express();
 
+// Clear all keys on boot
+red.del('online');
+
 app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
@@ -86,9 +89,9 @@ bayeux.attach(server);
 // Callbacks for bayeux
 bayeux.getClient().subscribe(MESSAGE_CHANNEL, function(message) {
   var hash = JSON.stringify(message);
-  console.log('[subscribe] - ' + hash);
-  
-  connection.query('INSERT INTO messages (content, user_id, timestamp) VALUES ("'+message.content+'",'+message.user_id+',"'+message.timestamp+'");', function(err, rows) {
+  console.log('[message] - ' + hash);
+
+  connection.query('INSERT INTO messages (content, user_id, timestamp) VALUES ("'+message.content+'","'+message.user_id+'","'+message.timestamp+'");', function(err, rows) {
     if (err) console.log('[MYSQL] Insert error' + err);
   });
 });
