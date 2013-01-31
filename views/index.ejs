@@ -3,69 +3,16 @@
   <head>
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
-    <script type='text/javascript' src='/javascripts/faye.js'></script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
-
-    <script type='text/javascript'>
-      var client = new Faye.Client('http://localhost:3000/messages');
-
-      $(document).ready(function() {
-        $('#new_message').bind('submit', function() {
-          var now = new Date();
-          var msg = {
-            content: $('#message').val(),
-            user_id: client._clientId,
-            timestamp: now.getHours() + ":" + now.getMinutes()
-          };
-          
-          client.publish('/messages', msg);
-          $('#message').val('');
-          return false;
-        });
-        
-        // Watch for chat messages
-        client.subscribe('/messages', function(message) {
-          $('#chat').append('<li><span class="created_at">' + message.timestamp + '</span>' + message.content + '</li>');
-        });
-        
-        // Watch for users coming online
-        client.subscribe('/users_online', function(id) {
-          $('#online').append('<li id="' + id + '">'+id+'</li>');
-        });
-        
-        // Watch for users coming offline
-        client.subscribe('/users_offline', function(id) {
-          $('ul#online li#'+id+'').remove()
-        });
-
-        $.getJSON('/chats.json', function(data) {
-          var items = [];
-          $.each(data, function(key, val) {
-            items.push('<li><span class="created_at">' + val['timestamp'] + '</span> ' + val['content'] + '</li>');
-          });
-          $.each(items,function(key, value) {
-            $('#chat').append(value);
-          });
-        });
-        
-        $.getJSON('/users.json', function(data) {
-          var items = [];
-          $.each(data, function(k, v) {
-            items.push('<li id="'+v+'">'+v+'</li>');
-          });
-          $.each(items,function(key, value) {
-            $('#online').append(value);
-          });
-        });
-        
-      });
-    </script>
   </head>
   <body>
     
     <div id="container">
       <h1>Shark Attack</h1>
+      
+      <em>Currently online</em>
       <ul id="online"></ul>
+      
+      <em>Chats</em>
       <ul id="chat"></ul>
       <br />
       <form id="new_message" action="#" method="get" accept-charset="utf-8">
@@ -74,4 +21,65 @@
       </form>
     </div>
   </body>
+  <script type='text/javascript' src='/javascripts/faye.js'></script>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+
+  <script type='text/javascript'>
+    var client = new Faye.Client('http://localhost:3000/messages');
+
+    $(document).ready(function() {
+      $('#new_message').bind('submit', function() {
+        if ($('#message').val() == '') return false 
+        var now = new Date();
+        var msg = {
+          content: $('#message').val(),
+          user_id: client._clientId,
+          timestamp: now.getHours() + ":" + now.getMinutes()
+        };
+        
+        client.publish('/messages', msg);
+        $('#message').val('');
+        return false;
+      });
+      
+      // Watch for chat messages
+      client.subscribe('/messages', function(message) {
+        $('#chat').append('<li><span class="created_at">' + message.timestamp + '</span> ' + message.content + '</li>');
+      });
+      
+      // Watch for users coming online
+      client.subscribe('/users_online', function(id) {
+        $('#online').append('<li id="' + id + '">'+id+'</li>');
+      });
+      
+      // Watch for users coming offline
+      client.subscribe('/users_offline', function(id) {
+        $('ul#online li#'+id+'').remove()
+      });
+
+      // We have to load the chats because the channel does not account for older chat logs
+      $.getJSON('/chats.json', function(data) {
+        var items = [];
+        $.each(data, function(key, val) {
+          items.push('<li><span class="created_at">' + val['timestamp'] + '</span> ' + val['content'] + '</li>');
+        });
+        $.each(items,function(key, value) {
+          $('#chat').append(value);
+        });
+      });
+      
+      // We have to load the users that are online via a get request because the channel does not brodcast
+      // previously logged in users
+      $.getJSON('/users.json', function(data) {
+        var items = [];
+        $.each(data, function(k, v) {
+          items.push('<li id="'+v+'">'+v+'</li>');
+        });
+        $.each(items,function(key, value) {
+          $('#online').append(value);
+        });
+      });
+      
+    });
+  </script>
 </html>

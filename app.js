@@ -27,10 +27,11 @@ connection.query('SELECT 1 + 1 AS solution', function(err, rows, fields) {
 });
 
 var red = redis.createClient();
-var app = express();
 
 // Clear all keys on boot
 red.del('online');
+
+var app = express();
 
 app.configure(function(){
   app.set('port', process.env.PORT || 3000);
@@ -49,6 +50,10 @@ app.configure(function(){
 
 app.configure('development', function(){
   app.use(express.errorHandler());
+	// app.use(function(req, res, next){
+	//   var ua = req.headers['user-agent'];
+	//   red.sadd('agents', ua);
+	// });
 });
 
 // GET /
@@ -64,14 +69,14 @@ app.get('/chats.json', function(req, res) {
 
 // GET /users.json
 app.get('/users.json', function(req, res) {
-	var users = red.smembers("online", function(err, content){
+	red.smembers("online", function(err, content){
 		res.writeHead(200, {'Content-Type': 'application/json'});
 	  res.end(JSON.stringify(content));
   });
 });
 
 server = http.createServer(app).listen(app.get('port'), function(){
-  console.log("Express server listening on port " + app.get('port'));
+  console.log("Server started on port " + app.get('port'));
 });
 
 // Used for the chat messaging channel
@@ -89,19 +94,18 @@ bayeux.attach(server);
 // Callbacks for bayeux
 bayeux.getClient().subscribe(MESSAGE_CHANNEL, function(message) {
   var hash = JSON.stringify(message);
-  console.log('[message] - ' + hash);
-
   connection.query('INSERT INTO messages (content, user_id, timestamp) VALUES ("'+message.content+'","'+message.user_id+'","'+message.timestamp+'");', function(err, rows) {
     if (err) console.log('[MYSQL] Insert error' + err);
   });
+	console.log('[message] - ' + hash);
 });
 
 
 // When a user connects to the channel
 bayeux.bind('handshake', function(client_id) {
-  console.log('[handshake] - client: ' + client_id + '');
-	bayeux.getClient().publish(USERS_ONLINE, client_id);
 	red.sadd('online', client_id);
+	bayeux.getClient().publish(USERS_ONLINE, client_id);
+	console.log('[handshake] - client: ' + client_id + '');
 });
 
 bayeux.bind('subscribe', function(client_id, channel) {
@@ -115,15 +119,21 @@ bayeux.bind('publish', function(message, channels) {
 
 // When a user leaves the channel
 bayeux.bind('unsubscribe', function(client_id, channel) {
-  console.log('[unsubscribe] - client: ' + client_id + ' channel: ' + channel + '');
 	red.srem('online', client_id);
+  console.log('[unsubscribe] - client: ' + client_id + ' channel: ' + channel + '');
 });
 
 bayeux.bind('disconnect', function(client_id) {
-  console.log('[disconnect] - client: ' + client_id + '');
-	bayeux.getClient().publish(USERS_OFFLINE, client_id);
 	red.srem('online', client_id);
+	bayeux.getClient().publish(USERS_OFFLINE, client_id);
+	console.log('[disconnect] - client: ' + client_id + '');
 });
+
+
+
+
+
+
 
 
 
