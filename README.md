@@ -29,3 +29,5 @@ If everything has successfully worked. Go ahead and boot up the application by t
 	
 Thats it! You should be ready to roll.
 
+If you want to verify who is in a room and who leaves a room. Open a couple windows up for the application `http://localhost:3000` and in a Chrome console, type `client._clientId` this will give you your unique identifier that the application identifies you as. When you leave a room, you should see that ID disappear on the screens of the other clients.
+
