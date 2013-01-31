@@ -31,3 +31,7 @@ Thats it! You should be ready to roll.
 
 If you want to verify who is in a room and who leaves a room. Open a couple windows up for the application `http://localhost:3000` and in a Chrome console, type `client._clientId` this will give you your unique identifier that the application identifies you as. When you leave a room, you should see that ID disappear on the screens of the other clients.
 
+### Third party
+Take a look at node-xmpp
+Here is an example: http://stackoverflow.com/questions/4349577/connecting-to-google-talk-over-xmpp-on-node-js
+
