@@ -27,11 +27,10 @@ connection.query('SELECT 1 + 1 AS solution', function(err, rows, fields) {
 });
 
 var red = redis.createClient();
+var app = express();
 
 // Clear all keys on boot
 red.del('online');
-
-var app = express();
 
 // app.use(function(req, res, next){
 //   var ua = req.headers['user-agent'];
