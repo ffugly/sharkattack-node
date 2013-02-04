@@ -1,6 +1,6 @@
 var MESSAGE_CHANNEL = '/messages';
 var USERS_ONLINE    = '/users_online';
-var USERS_OFFLINE 	= '/users_offline';
+var USERS_OFFLINE   = '/users_offline';
 
 var express = require('express')
   , routes = require('./routes')
@@ -11,7 +11,7 @@ var express = require('express')
   , faye = require('faye')
   , mysql = require('mysql')
   , fayeRedis = require('faye-redis')
-	, redis = require('redis')
+  , redis = require('redis')
   , path = require('path');
 
 var connection = mysql.createConnection({
